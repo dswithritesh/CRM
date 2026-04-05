@@ -107,9 +107,15 @@ class AyurCRM_Plugin {
 	private function load_foundation_modules() {
 		$path = defined( 'AYURCRM_PATH' ) ? AYURCRM_PATH : trailingslashit( plugin_dir_path( __FILE__ ) . '..' );
 
-		// Core helpers and constants wrapper — no dependencies.
+		// Core constants wrapper — load first, then initialise immediately.
+		// AyurCRM_Constants is a static class; init() is safe to call here
+		// (after plugins_loaded). It uses wp_upload_dir() internally.
 		$this->loader->load_module( $path . 'includes/class-ayurcrm-constants.php' );
-		$this->loader->load_module( $path . 'includes/class-ayurcrm-helpers.php' );
+		if ( class_exists( 'AyurCRM_Constants' ) ) {
+			AyurCRM_Constants::init();
+		}
+
+		// Hook name registry and capability definitions.
 		$this->loader->load_module( $path . 'includes/class-ayurcrm-hooks.php' );
 		$this->loader->load_module( $path . 'includes/class-ayurcrm-capabilities.php' );
 
@@ -198,10 +204,8 @@ class AyurCRM_Plugin {
 	 * @return void
 	 */
 	private function define_global_hooks() {
-		// Runtime upload constants need wp_upload_dir() — defer to init.
-		if ( class_exists( 'AyurCRM_Constants' ) ) {
-			$this->loader->add_action( 'init', AyurCRM_Constants::get_instance(), 'define_upload_constants', 1, 0 );
-		}
+		// AyurCRM_Constants::init() is called directly in load_foundation_modules().
+		// Upload path constants are already defined — no hook needed here.
 
 		// Load text domain for i18n.
 		$this->loader->add_action( 'init', $this, 'load_textdomain', 5, 0 );
