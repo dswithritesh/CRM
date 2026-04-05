@@ -2,20 +2,19 @@
 /**
  * AyurCRM Runtime Constants
  *
- * Centralises all runtime configuration values that are not already defined
- * in the main plugin file (ayurcrm.php). This file is loaded early in the
- * bootstrap chain and must not perform any DB queries or produce output.
+ * Defines constants that require WordPress context (e.g. upload dir, site URL)
+ * and therefore cannot be set safely in the plugin root file before WordPress
+ * loads. Called once by AyurCRM_Plugin::load_foundation_modules() on
+ * plugins_loaded.
  *
- * Values defined here:
- *  - Upload / storage directory paths
- *  - Default pipeline stages and sub-statuses
- *  - Lead temperature labels
- *  - Lead score thresholds
- *  - Default source list
- *  - Pagination defaults
- *  - Activity type registry
- *  - Communication outcome options
- *  - Table name helpers (via static methods)
+ * Responsibilities:
+ *  - Upload directory paths for imports and exports
+ *  - Table name constants for all AyurCRM custom tables
+ *  - Status and pipeline constants
+ *  - Default option key constants
+ *
+ * All defines are guarded with defined() checks so this file is safe to
+ * include multiple times without redeclaration errors.
  *
  * @package AyurCRM
  * @since   1.0.0
@@ -28,440 +27,252 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class AyurCRM_Constants
  *
- * All values are exposed as public class constants or static methods.
- * No instance of this class is ever created.
+ * Static initialiser. Call AyurCRM_Constants::init() once on plugins_loaded
+ * to define all runtime-context constants.
  */
 class AyurCRM_Constants {
 
-	// -----------------------------------------------------------------------
-	// Upload / storage paths
-	// -----------------------------------------------------------------------
-
 	/**
-	 * Sub-directory inside wp-content/uploads for AyurCRM files.
-	 * Does NOT include a trailing slash.
-	 */
-	const UPLOAD_SUBDIR = 'ayurcrm';
-
-	/**
-	 * Sub-directory for import staging files.
-	 */
-	const IMPORT_SUBDIR = 'ayurcrm/imports';
-
-	/**
-	 * Sub-directory for export output files.
-	 */
-	const EXPORT_SUBDIR = 'ayurcrm/exports';
-
-	// -----------------------------------------------------------------------
-	// Pagination
-	// -----------------------------------------------------------------------
-
-	const LEADS_PER_PAGE       = 25;
-	const ACTIVITIES_PER_PAGE  = 50;
-	const IMPORTS_PER_PAGE     = 20;
-	const EXPORTS_PER_PAGE     = 20;
-	const LOGS_PER_PAGE        = 50;
-
-	// -----------------------------------------------------------------------
-	// Default pipeline stages
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Ordered default pipeline stage slugs.
-	 * These are the seed values — admins can customise via the pipeline manager.
+	 * Whether constants have already been initialised.
 	 *
-	 * @return string[]
+	 * @var bool
 	 */
-	public static function default_pipeline_stages() {
-		return array(
-			'new',
-			'contacted',
-			'interested',
-			'qualified',
-			'consultation_booked',
-			'followup_pending',
-			'not_responding',
-			'converted',
-			'lost',
-		);
-	}
+	private static $initialised = false;
 
 	/**
-	 * Full pipeline stage definitions with labels and colours.
+	 * Initialise all runtime constants.
 	 *
-	 * @return array[]  [ slug => [ label, color, is_terminal ] ]
-	 */
-	public static function default_pipeline_stage_definitions() {
-		return array(
-			'new'                  => array( 'label' => 'New',                  'color' => '#6366f1', 'is_terminal' => false ),
-			'contacted'            => array( 'label' => 'Contacted',            'color' => '#3b82f6', 'is_terminal' => false ),
-			'interested'           => array( 'label' => 'Interested',           'color' => '#f59e0b', 'is_terminal' => false ),
-			'qualified'            => array( 'label' => 'Qualified',            'color' => '#10b981', 'is_terminal' => false ),
-			'consultation_booked'  => array( 'label' => 'Consultation Booked',  'color' => '#8b5cf6', 'is_terminal' => false ),
-			'followup_pending'     => array( 'label' => 'Follow-up Pending',    'color' => '#f97316', 'is_terminal' => false ),
-			'not_responding'       => array( 'label' => 'Not Responding',       'color' => '#94a3b8', 'is_terminal' => false ),
-			'converted'            => array( 'label' => 'Converted',            'color' => '#22c55e', 'is_terminal' => true  ),
-			'lost'                 => array( 'label' => 'Lost',                 'color' => '#ef4444', 'is_terminal' => true  ),
-		);
-	}
-
-	// -----------------------------------------------------------------------
-	// Lead temperature
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Lead temperature options.
+	 * Safe to call multiple times — only runs on the first call.
 	 *
-	 * @return array[]  [ slug => label ]
+	 * @return void
 	 */
-	public static function lead_temperature_options() {
-		return array(
-			'hot'     => 'Hot',
-			'warm'    => 'Warm',
-			'cold'    => 'Cold',
-			'unknown' => 'Unknown',
-		);
-	}
-
-	// -----------------------------------------------------------------------
-	// Lead score thresholds
-	// -----------------------------------------------------------------------
-
-	const LEAD_SCORE_HOT_MIN  = 70;
-	const LEAD_SCORE_WARM_MIN = 40;
-	// Below WARM_MIN = cold.
-
-	/**
-	 * Derive lead temperature string from a numeric score.
-	 *
-	 * @param int|float $score
-	 * @return string  'hot'|'warm'|'cold'
-	 */
-	public static function temperature_from_score( $score ) {
-		$score = (int) $score;
-		if ( $score >= self::LEAD_SCORE_HOT_MIN ) {
-			return 'hot';
-		}
-		if ( $score >= self::LEAD_SCORE_WARM_MIN ) {
-			return 'warm';
-		}
-		return 'cold';
-	}
-
-	// -----------------------------------------------------------------------
-	// Lead priority
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Lead priority options.
-	 *
-	 * @return array[]  [ slug => label ]
-	 */
-	public static function lead_priority_options() {
-		return array(
-			'high'   => 'High',
-			'medium' => 'Medium',
-			'low'    => 'Low',
-		);
-	}
-
-	// -----------------------------------------------------------------------
-	// Source options
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Default lead source options.
-	 *
-	 * @return array[]  [ slug => label ]
-	 */
-	public static function default_source_options() {
-		return array(
-			'website'         => 'Website',
-			'landing_page'    => 'Landing Page',
-			'whatsapp'        => 'WhatsApp',
-			'facebook_ad'     => 'Facebook Ad',
-			'google_ad'       => 'Google Ad',
-			'instagram_ad'    => 'Instagram Ad',
-			'organic_search'  => 'Organic Search',
-			'referral'        => 'Referral',
-			'walkin'          => 'Walk-in',
-			'phone_call'      => 'Phone Call',
-			'assessment'      => 'Assessment / Quiz',
-			'csv_import'      => 'CSV Import',
-			'manual_entry'    => 'Manual Entry',
-			'webhook'         => 'Webhook / API',
-			'other'           => 'Other',
-		);
-	}
-
-	// -----------------------------------------------------------------------
-	// Activity types
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Activity type constants — used in the lead_activities table `type` column.
-	 */
-	const ACTIVITY_NOTE              = 'note';
-	const ACTIVITY_STATUS_CHANGE     = 'status_change';
-	const ACTIVITY_ASSIGNMENT        = 'assignment';
-	const ACTIVITY_FOLLOWUP          = 'followup';
-	const ACTIVITY_CALL_LOG          = 'call_log';
-	const ACTIVITY_EMAIL_LOG         = 'email_log';
-	const ACTIVITY_WHATSAPP_LOG      = 'whatsapp_log';
-	const ACTIVITY_IMPORT            = 'import';
-	const ACTIVITY_EXPORT            = 'export';
-	const ACTIVITY_DUPLICATE_FLAG    = 'duplicate_flag';
-	const ACTIVITY_MERGE             = 'merge';
-	const ACTIVITY_FIELD_UPDATE      = 'field_update';
-	const ACTIVITY_WEBHOOK_RECEIVED  = 'webhook_received';
-	const ACTIVITY_WEBHOOK_SENT      = 'webhook_sent';
-	const ACTIVITY_SLA_BREACH        = 'sla_breach';
-	const ACTIVITY_SYSTEM            = 'system';
-
-	/**
-	 * All registered activity types as slug => label map.
-	 *
-	 * @return array[]
-	 */
-	public static function activity_type_labels() {
-		return array(
-			self::ACTIVITY_NOTE             => 'Note',
-			self::ACTIVITY_STATUS_CHANGE    => 'Status Change',
-			self::ACTIVITY_ASSIGNMENT       => 'Assignment',
-			self::ACTIVITY_FOLLOWUP         => 'Follow-up',
-			self::ACTIVITY_CALL_LOG         => 'Call Log',
-			self::ACTIVITY_EMAIL_LOG        => 'Email Log',
-			self::ACTIVITY_WHATSAPP_LOG     => 'WhatsApp Log',
-			self::ACTIVITY_IMPORT           => 'Import',
-			self::ACTIVITY_EXPORT           => 'Export',
-			self::ACTIVITY_DUPLICATE_FLAG   => 'Duplicate Flagged',
-			self::ACTIVITY_MERGE            => 'Merge',
-			self::ACTIVITY_FIELD_UPDATE     => 'Field Update',
-			self::ACTIVITY_WEBHOOK_RECEIVED => 'Webhook Received',
-			self::ACTIVITY_WEBHOOK_SENT     => 'Webhook Sent',
-			self::ACTIVITY_SLA_BREACH       => 'SLA Breach',
-			self::ACTIVITY_SYSTEM           => 'System',
-		);
-	}
-
-	// -----------------------------------------------------------------------
-	// Communication / call outcomes
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Call outcome options for call logging.
-	 *
-	 * @return array[]  [ slug => label ]
-	 */
-	public static function call_outcome_options() {
-		return array(
-			'no_answer'       => 'No Answer',
-			'busy'            => 'Busy',
-			'switched_off'    => 'Switched Off',
-			'not_reachable'   => 'Not Reachable',
-			'interested'      => 'Interested',
-			'callback_later'  => 'Callback Later',
-			'not_interested'  => 'Not Interested',
-			'converted'       => 'Converted',
-			'wrong_number'    => 'Wrong Number',
-			'left_voicemail'  => 'Left Voicemail',
-		);
-	}
-
-	// -----------------------------------------------------------------------
-	// Gender options
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Gender options for lead capture forms.
-	 *
-	 * @return array[]  [ slug => label ]
-	 */
-	public static function gender_options() {
-		return array(
-			'male'              => 'Male',
-			'female'            => 'Female',
-			'other'             => 'Other',
-			'prefer_not_to_say' => 'Prefer Not to Say',
-		);
-	}
-
-	// -----------------------------------------------------------------------
-	// Device type options
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Device type options captured at lead submission time.
-	 *
-	 * @return array[]  [ slug => label ]
-	 */
-	public static function device_type_options() {
-		return array(
-			'mobile'  => 'Mobile',
-			'tablet'  => 'Tablet',
-			'desktop' => 'Desktop',
-			'unknown' => 'Unknown',
-		);
-	}
-
-	// -----------------------------------------------------------------------
-	// Database table name helpers
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Return the full (prefixed) name of the leads table.
-	 *
-	 * @return string
-	 */
-	public static function table_leads() {
-		global $wpdb;
-		return $wpdb->prefix . 'ayurcrm_leads';
-	}
-
-	/**
-	 * Return the full (prefixed) name of the lead activities table.
-	 *
-	 * @return string
-	 */
-	public static function table_activities() {
-		global $wpdb;
-		return $wpdb->prefix . 'ayurcrm_lead_activities';
-	}
-
-	/**
-	 * Return the full (prefixed) name of the lead assignments table.
-	 *
-	 * @return string
-	 */
-	public static function table_assignments() {
-		global $wpdb;
-		return $wpdb->prefix . 'ayurcrm_lead_assignments';
-	}
-
-	/**
-	 * Return the full (prefixed) name of the follow-ups table.
-	 *
-	 * @return string
-	 */
-	public static function table_followups() {
-		global $wpdb;
-		return $wpdb->prefix . 'ayurcrm_followups';
-	}
-
-	/**
-	 * Return the full (prefixed) name of the imports table.
-	 *
-	 * @return string
-	 */
-	public static function table_imports() {
-		global $wpdb;
-		return $wpdb->prefix . 'ayurcrm_imports';
-	}
-
-	/**
-	 * Return the full (prefixed) name of the exports table.
-	 *
-	 * @return string
-	 */
-	public static function table_exports() {
-		global $wpdb;
-		return $wpdb->prefix . 'ayurcrm_exports';
-	}
-
-	/**
-	 * Return the full (prefixed) name of the logs table.
-	 *
-	 * @return string
-	 */
-	public static function table_logs() {
-		global $wpdb;
-		return $wpdb->prefix . 'ayurcrm_logs';
-	}
-
-	/**
-	 * Return the full (prefixed) name of the lead meta table.
-	 *
-	 * @return string
-	 */
-	public static function table_lead_meta() {
-		global $wpdb;
-		return $wpdb->prefix . 'ayurcrm_lead_meta';
-	}
-
-	/**
-	 * Return an associative map of all AyurCRM table names.
-	 *
-	 * Used by the migrator and DB class to iterate all tables.
-	 *
-	 * @return string[]  [ key => full_table_name ]
-	 */
-	public static function all_tables() {
-		return array(
-			'leads'       => self::table_leads(),
-			'activities'  => self::table_activities(),
-			'assignments' => self::table_assignments(),
-			'followups'   => self::table_followups(),
-			'imports'     => self::table_imports(),
-			'exports'     => self::table_exports(),
-			'logs'        => self::table_logs(),
-			'lead_meta'   => self::table_lead_meta(),
-		);
-	}
-
-	// -----------------------------------------------------------------------
-	// Upload directory helpers
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Return the absolute filesystem path to the AyurCRM uploads directory.
-	 * Creates the directory if it does not exist.
-	 *
-	 * @param string $subdir  One of the SUBDIR constants or a custom relative path.
-	 * @return string  Absolute path with trailing slash.
-	 */
-	public static function get_upload_dir( $subdir = self::UPLOAD_SUBDIR ) {
-		$upload_dir = wp_upload_dir();
-		$path       = trailingslashit( $upload_dir['basedir'] ) . ltrim( $subdir, '/' );
-
-		if ( ! file_exists( $path ) ) {
-			wp_mkdir_p( $path );
-
-			// Drop an .htaccess to block direct HTTP access to uploads.
-			$htaccess = $path . '/.htaccess';
-			if ( ! file_exists( $htaccess ) ) {
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-				file_put_contents( $htaccess, "Options -Indexes\ndeny from all\n" );
-			}
+	public static function init() {
+		if ( self::$initialised ) {
+			return;
 		}
 
-		return trailingslashit( $path );
+		self::define_upload_paths();
+		self::define_table_names();
+		self::define_status_constants();
+		self::define_option_keys();
+
+		self::$initialised = true;
 	}
 
+	// -----------------------------------------------------------------------
+	// Upload paths
+	// -----------------------------------------------------------------------
+
 	/**
-	 * Return the public URL for the AyurCRM uploads directory.
+	 * Define upload-directory-based path constants for imports and exports.
 	 *
-	 * Note: files in this directory are blocked by .htaccess on Apache.
-	 * Do NOT expose raw import/export files via this URL in production.
+	 * Uses wp_upload_dir() which requires WordPress to be loaded.
 	 *
-	 * @param string $subdir
-	 * @return string  URL with trailing slash.
+	 * @return void
 	 */
-	public static function get_upload_url( $subdir = self::UPLOAD_SUBDIR ) {
-		$upload_dir = wp_upload_dir();
-		return trailingslashit( $upload_dir['baseurl'] ) . ltrim( $subdir, '/' ) . '/';
+	private static function define_upload_paths() {
+		$upload = wp_upload_dir();
+		$base   = trailingslashit( $upload['basedir'] ) . 'ayurcrm/';
+
+		self::safe_define( 'AYURCRM_UPLOAD_DIR',         $base );
+		self::safe_define( 'AYURCRM_IMPORT_DIR',         $base . 'imports/' );
+		self::safe_define( 'AYURCRM_EXPORT_DIR',         $base . 'exports/' );
+		self::safe_define( 'AYURCRM_UPLOAD_URL',         trailingslashit( $upload['baseurl'] ) . 'ayurcrm/' );
+		self::safe_define( 'AYURCRM_IMPORT_URL',         trailingslashit( $upload['baseurl'] ) . 'ayurcrm/imports/' );
+		self::safe_define( 'AYURCRM_EXPORT_URL',         trailingslashit( $upload['baseurl'] ) . 'ayurcrm/exports/' );
+	}
+
+	// -----------------------------------------------------------------------
+	// Table names
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Define table name constants using the WordPress table prefix.
+	 *
+	 * @return void
+	 */
+	private static function define_table_names() {
+		global $wpdb;
+		$p = $wpdb->prefix;
+
+		// Core tables
+		self::safe_define( 'AYURCRM_TABLE_LEADS',              $p . 'ayurcrm_leads' );
+		self::safe_define( 'AYURCRM_TABLE_LEAD_META',          $p . 'ayurcrm_lead_meta' );
+		self::safe_define( 'AYURCRM_TABLE_ACTIVITIES',         $p . 'ayurcrm_activities' );
+		self::safe_define( 'AYURCRM_TABLE_ASSIGNMENTS',        $p . 'ayurcrm_assignments' );
+		self::safe_define( 'AYURCRM_TABLE_FOLLOWUPS',          $p . 'ayurcrm_followups' );
+
+		// Import / export
+		self::safe_define( 'AYURCRM_TABLE_IMPORTS',            $p . 'ayurcrm_imports' );
+		self::safe_define( 'AYURCRM_TABLE_EXPORTS',            $p . 'ayurcrm_exports' );
+
+		// System tables
+		self::safe_define( 'AYURCRM_TABLE_LOGS',               $p . 'ayurcrm_logs' );
+		self::safe_define( 'AYURCRM_TABLE_NOTIFICATIONS',      $p . 'ayurcrm_notifications' );
+		self::safe_define( 'AYURCRM_TABLE_STATUS_REGISTRY',    $p . 'ayurcrm_status_registry' );
+		self::safe_define( 'AYURCRM_TABLE_CUSTOM_FIELDS',      $p . 'ayurcrm_custom_fields' );
+		self::safe_define( 'AYURCRM_TABLE_INTEGRATION_LOGS',   $p . 'ayurcrm_integration_logs' );
+	}
+
+	// -----------------------------------------------------------------------
+	// Status constants
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Define lead status slug constants.
+	 *
+	 * These are the default pipeline stages. Custom stages can be added via
+	 * the status registry table; these constants represent the system defaults.
+	 *
+	 * @return void
+	 */
+	private static function define_status_constants() {
+		// Pipeline stages
+		self::safe_define( 'AYURCRM_STATUS_NEW',                  'new' );
+		self::safe_define( 'AYURCRM_STATUS_CONTACTED',            'contacted' );
+		self::safe_define( 'AYURCRM_STATUS_INTERESTED',           'interested' );
+		self::safe_define( 'AYURCRM_STATUS_QUALIFIED',            'qualified' );
+		self::safe_define( 'AYURCRM_STATUS_CONSULTATION_BOOKED',  'consultation_booked' );
+		self::safe_define( 'AYURCRM_STATUS_FOLLOWUP_PENDING',     'followup_pending' );
+		self::safe_define( 'AYURCRM_STATUS_NOT_RESPONDING',       'not_responding' );
+		self::safe_define( 'AYURCRM_STATUS_CONVERTED',            'converted' );
+		self::safe_define( 'AYURCRM_STATUS_LOST',                 'lost' );
+
+		// Lead temperature
+		self::safe_define( 'AYURCRM_TEMP_HOT',   'hot' );
+		self::safe_define( 'AYURCRM_TEMP_WARM',  'warm' );
+		self::safe_define( 'AYURCRM_TEMP_COLD',  'cold' );
+
+		// Lead priority
+		self::safe_define( 'AYURCRM_PRIORITY_HIGH',    'high' );
+		self::safe_define( 'AYURCRM_PRIORITY_MEDIUM',  'medium' );
+		self::safe_define( 'AYURCRM_PRIORITY_LOW',     'low' );
+
+		// Activity types
+		self::safe_define( 'AYURCRM_ACTIVITY_NOTE',           'note' );
+		self::safe_define( 'AYURCRM_ACTIVITY_CALL',           'call' );
+		self::safe_define( 'AYURCRM_ACTIVITY_EMAIL',          'email' );
+		self::safe_define( 'AYURCRM_ACTIVITY_WHATSAPP',       'whatsapp' );
+		self::safe_define( 'AYURCRM_ACTIVITY_STATUS_CHANGE',  'status_change' );
+		self::safe_define( 'AYURCRM_ACTIVITY_ASSIGNMENT',     'assignment' );
+		self::safe_define( 'AYURCRM_ACTIVITY_FOLLOWUP',       'followup' );
+		self::safe_define( 'AYURCRM_ACTIVITY_IMPORT',         'import' );
+		self::safe_define( 'AYURCRM_ACTIVITY_SYSTEM',         'system' );
+
+		// Call outcomes
+		self::safe_define( 'AYURCRM_CALL_NO_ANSWER',     'no_answer' );
+		self::safe_define( 'AYURCRM_CALL_BUSY',          'busy' );
+		self::safe_define( 'AYURCRM_CALL_SWITCHED_OFF',  'switched_off' );
+		self::safe_define( 'AYURCRM_CALL_INTERESTED',    'interested' );
+		self::safe_define( 'AYURCRM_CALL_CALLBACK',      'callback' );
+		self::safe_define( 'AYURCRM_CALL_CONVERTED',     'converted' );
+		self::safe_define( 'AYURCRM_CALL_LOST',          'lost' );
 	}
 
 	// -----------------------------------------------------------------------
 	// Option key constants
 	// -----------------------------------------------------------------------
 
-	const OPTION_DB_VERSION         = 'ayurcrm_db_version';
-	const OPTION_PLUGIN_ACTIVE      = 'ayurcrm_plugin_active';
-	const OPTION_ACTIVATION_DATE    = 'ayurcrm_activation_date';
-	const OPTION_SETTINGS           = 'ayurcrm_settings';
-	const OPTION_PIPELINE_STAGES    = 'ayurcrm_pipeline_stages';
-	const OPTION_NOTIFICATION_PREFS = 'ayurcrm_notification_prefs';
-	const TRANSIENT_NEEDS_MIGRATION = 'ayurcrm_needs_migration';
-	const TRANSIENT_MIGRATION_LOCK  = 'ayurcrm_migration_lock';
+	/**
+	 * Define WP options key constants used by AyurCRM.
+	 *
+	 * Centralising option keys here prevents typo-driven bugs and makes
+	 * searching for option usage trivial.
+	 *
+	 * @return void
+	 */
+	private static function define_option_keys() {
+		self::safe_define( 'AYURCRM_OPT_DB_VERSION',          'ayurcrm_db_version' );
+		self::safe_define( 'AYURCRM_OPT_ACTIVATION_DATE',     'ayurcrm_activation_date' );
+		self::safe_define( 'AYURCRM_OPT_PLUGIN_ACTIVE',       'ayurcrm_plugin_active' );
+		self::safe_define( 'AYURCRM_OPT_SETTINGS',            'ayurcrm_settings' );
+		self::safe_define( 'AYURCRM_OPT_NOTIFICATION_PREFS',  'ayurcrm_notification_prefs' );
+		self::safe_define( 'AYURCRM_OPT_PIPELINE_CONFIG',     'ayurcrm_pipeline_config' );
+		self::safe_define( 'AYURCRM_OPT_BRANCH_CONFIG',       'ayurcrm_branch_config' );
+		self::safe_define( 'AYURCRM_OPT_ASSIGNMENT_RULES',    'ayurcrm_assignment_rules' );
+		self::safe_define( 'AYURCRM_OPT_SLA_CONFIG',          'ayurcrm_sla_config' );
+		self::safe_define( 'AYURCRM_OPT_INTEGRATION_CONFIG',  'ayurcrm_integration_config' );
+		self::safe_define( 'AYURCRM_OPT_IMPORT_PRESETS',      'ayurcrm_import_presets' );
+		self::safe_define( 'AYURCRM_OPT_ROUND_ROBIN_INDEX',   'ayurcrm_round_robin_index' );
+
+		// Transient keys (not wp_options, but referenced as constants)
+		self::safe_define( 'AYURCRM_TRANSIENT_NEEDS_MIGRATION',  'ayurcrm_needs_migration' );
+		self::safe_define( 'AYURCRM_TRANSIENT_MIGRATION_LOCK',   'ayurcrm_migration_lock' );
+		self::safe_define( 'AYURCRM_TRANSIENT_DASHBOARD_TODAY',  'ayurcrm_cache_dashboard_today' );
+		self::safe_define( 'AYURCRM_TRANSIENT_DASHBOARD_STATS',  'ayurcrm_cache_dashboard_stats' );
+	}
+
+	// -----------------------------------------------------------------------
+	// Utility
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Define a constant only if it has not already been defined.
+	 *
+	 * @param string $name  Constant name.
+	 * @param mixed  $value Constant value.
+	 * @return void
+	 */
+	private static function safe_define( $name, $value ) {
+		if ( ! defined( $name ) ) {
+			define( $name, $value );
+		}
+	}
+
+	/**
+	 * Return all default pipeline statuses as an ordered array.
+	 *
+	 * Each entry: [ 'slug' => string, 'label' => string, 'color' => string ]
+	 *
+	 * @return array[]
+	 */
+	public static function get_default_statuses() {
+		return array(
+			array( 'slug' => AYURCRM_STATUS_NEW,                 'label' => 'New',                  'color' => '#6B7280' ),
+			array( 'slug' => AYURCRM_STATUS_CONTACTED,           'label' => 'Contacted',             'color' => '#3B82F6' ),
+			array( 'slug' => AYURCRM_STATUS_INTERESTED,          'label' => 'Interested',            'color' => '#8B5CF6' ),
+			array( 'slug' => AYURCRM_STATUS_QUALIFIED,           'label' => 'Qualified',             'color' => '#F59E0B' ),
+			array( 'slug' => AYURCRM_STATUS_CONSULTATION_BOOKED, 'label' => 'Consultation Booked',   'color' => '#10B981' ),
+			array( 'slug' => AYURCRM_STATUS_FOLLOWUP_PENDING,    'label' => 'Follow-up Pending',     'color' => '#F97316' ),
+			array( 'slug' => AYURCRM_STATUS_NOT_RESPONDING,      'label' => 'Not Responding',        'color' => '#EF4444' ),
+			array( 'slug' => AYURCRM_STATUS_CONVERTED,           'label' => 'Converted',             'color' => '#059669' ),
+			array( 'slug' => AYURCRM_STATUS_LOST,                'label' => 'Lost',                  'color' => '#DC2626' ),
+		);
+	}
+
+	/**
+	 * Return all call outcome options as slug => label map.
+	 *
+	 * @return string[]
+	 */
+	public static function get_call_outcomes() {
+		return array(
+			AYURCRM_CALL_NO_ANSWER    => 'No Answer',
+			AYURCRM_CALL_BUSY         => 'Busy',
+			AYURCRM_CALL_SWITCHED_OFF => 'Switched Off',
+			AYURCRM_CALL_INTERESTED   => 'Interested',
+			AYURCRM_CALL_CALLBACK     => 'Callback Requested',
+			AYURCRM_CALL_CONVERTED    => 'Converted',
+			AYURCRM_CALL_LOST         => 'Lost',
+		);
+	}
+
+	/**
+	 * Return all activity type slugs as a flat array.
+	 *
+	 * @return string[]
+	 */
+	public static function get_activity_types() {
+		return array(
+			AYURCRM_ACTIVITY_NOTE,
+			AYURCRM_ACTIVITY_CALL,
+			AYURCRM_ACTIVITY_EMAIL,
+			AYURCRM_ACTIVITY_WHATSAPP,
+			AYURCRM_ACTIVITY_STATUS_CHANGE,
+			AYURCRM_ACTIVITY_ASSIGNMENT,
+			AYURCRM_ACTIVITY_FOLLOWUP,
+			AYURCRM_ACTIVITY_IMPORT,
+			AYURCRM_ACTIVITY_SYSTEM,
+		);
+	}
 }
