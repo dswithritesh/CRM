@@ -54,7 +54,7 @@ if ( isset( $wp_version ) && version_compare( $wp_version, '6.0', '<' ) ) {
 // ---------------------------------------------------------------------------
 
 define( 'AYURCRM_VERSION',     '1.0.0' );
-define( 'AYURCRM_DB_VERSION',  '1.0.0' );
+define( 'AYURCRM_DB_VERSION',  '1.0.4' );
 define( 'AYURCRM_PATH',        plugin_dir_path( __FILE__ ) );
 define( 'AYURCRM_URL',         plugin_dir_url( __FILE__ ) );
 define( 'AYURCRM_BASENAME',    plugin_basename( __FILE__ ) );

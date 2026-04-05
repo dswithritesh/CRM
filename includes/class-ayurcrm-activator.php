@@ -29,7 +29,7 @@ class AyurCRM_Activator {
 
 		// Store lightweight flags (not autoloaded).
 		add_option( 'ayurcrm_needs_setup',       '1',             '', 'no' );
-		add_option( 'ayurcrm_activation_time',   (string) time(), '', 'no' );
+		add_option( 'ayurcrm_activation_time',   time(),          '', 'no' );
 		add_option( 'ayurcrm_plugin_version',    AYURCRM_VERSION, '', 'no' );
 
 		// Register custom roles and capabilities.

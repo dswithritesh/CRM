@@ -36,7 +36,7 @@ class AyurCRM_Migration_0005_Import_Export_Logs extends AyurCRM_Migration_Base {
 		// ayurcrm_imports
 		// ------------------------------------------------------------------
 		$imports_table = $wpdb->prefix . 'ayurcrm_imports';
-		dbDelta( "CREATE TABLE {$imports_table} (
+		$sql           = "CREATE TABLE {$imports_table} (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   batch_id VARCHAR(64) NOT NULL DEFAULT '',
   file_name VARCHAR(500) NOT NULL DEFAULT '',
@@ -61,13 +61,14 @@ class AyurCRM_Migration_0005_Import_Export_Logs extends AyurCRM_Migration_Base {
   KEY idx_status (status),
   KEY idx_created_by (created_by),
   KEY idx_created_at (created_at)
-) ENGINE=InnoDB {$collate}" );
+) ENGINE=InnoDB {$collate}";
+		dbDelta( $sql );
 
 		// ------------------------------------------------------------------
 		// ayurcrm_import_rows
 		// ------------------------------------------------------------------
 		$import_rows_table = $wpdb->prefix . 'ayurcrm_import_rows';
-		dbDelta( "CREATE TABLE {$import_rows_table} (
+		$sql               = "CREATE TABLE {$import_rows_table} (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   import_id BIGINT UNSIGNED NOT NULL,
   row_number BIGINT UNSIGNED NOT NULL DEFAULT 0,
@@ -81,13 +82,14 @@ class AyurCRM_Migration_0005_Import_Export_Logs extends AyurCRM_Migration_Base {
   KEY idx_import_id (import_id),
   KEY idx_status (status),
   KEY idx_lead_id (lead_id)
-) ENGINE=InnoDB {$collate}" );
+) ENGINE=InnoDB {$collate}";
+		dbDelta( $sql );
 
 		// ------------------------------------------------------------------
 		// ayurcrm_exports
 		// ------------------------------------------------------------------
 		$exports_table = $wpdb->prefix . 'ayurcrm_exports';
-		dbDelta( "CREATE TABLE {$exports_table} (
+		$sql           = "CREATE TABLE {$exports_table} (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   export_key VARCHAR(64) NOT NULL DEFAULT '',
   file_name VARCHAR(500) NOT NULL DEFAULT '',
@@ -110,13 +112,14 @@ class AyurCRM_Migration_0005_Import_Export_Logs extends AyurCRM_Migration_Base {
   KEY idx_status (status),
   KEY idx_created_by (created_by),
   KEY idx_expires_at (expires_at)
-) ENGINE=InnoDB {$collate}" );
+) ENGINE=InnoDB {$collate}";
+		dbDelta( $sql );
 
 		// ------------------------------------------------------------------
 		// ayurcrm_lead_meta
 		// ------------------------------------------------------------------
 		$lead_meta_table = $wpdb->prefix . 'ayurcrm_lead_meta';
-		dbDelta( "CREATE TABLE {$lead_meta_table} (
+		$sql             = "CREATE TABLE {$lead_meta_table} (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   lead_id BIGINT UNSIGNED NOT NULL,
   meta_key VARCHAR(255) NOT NULL DEFAULT '',
@@ -125,13 +128,14 @@ class AyurCRM_Migration_0005_Import_Export_Logs extends AyurCRM_Migration_Base {
   PRIMARY KEY  (id),
   KEY idx_lead_id (lead_id),
   KEY idx_meta_key (meta_key)
-) ENGINE=InnoDB {$collate}" );
+) ENGINE=InnoDB {$collate}";
+		dbDelta( $sql );
 
 		// ------------------------------------------------------------------
 		// ayurcrm_status_registry
 		// ------------------------------------------------------------------
 		$status_table = $wpdb->prefix . 'ayurcrm_status_registry';
-		dbDelta( "CREATE TABLE {$status_table} (
+		$sql          = "CREATE TABLE {$status_table} (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   status_key VARCHAR(100) NOT NULL DEFAULT '',
   label VARCHAR(200) NOT NULL DEFAULT '',
@@ -145,7 +149,8 @@ class AyurCRM_Migration_0005_Import_Export_Logs extends AyurCRM_Migration_Base {
   PRIMARY KEY  (id),
   UNIQUE KEY idx_status_key (status_key),
   KEY idx_sort_order (sort_order)
-) ENGINE=InnoDB {$collate}" );
+) ENGINE=InnoDB {$collate}";
+		dbDelta( $sql );
 
 		// Seed default pipeline stages.
 		$this->seed_status_registry( $status_table );
@@ -154,7 +159,7 @@ class AyurCRM_Migration_0005_Import_Export_Logs extends AyurCRM_Migration_Base {
 		// ayurcrm_notification_queue
 		// ------------------------------------------------------------------
 		$notif_table = $wpdb->prefix . 'ayurcrm_notification_queue';
-		dbDelta( "CREATE TABLE {$notif_table} (
+		$sql         = "CREATE TABLE {$notif_table} (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   notification_type VARCHAR(100) NOT NULL DEFAULT '',
   recipient_user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
@@ -178,13 +183,14 @@ class AyurCRM_Migration_0005_Import_Export_Logs extends AyurCRM_Migration_Base {
   KEY idx_lead_id (lead_id),
   KEY idx_recipient_user_id (recipient_user_id),
   KEY idx_created_at (created_at)
-) ENGINE=InnoDB {$collate}" );
+) ENGINE=InnoDB {$collate}";
+		dbDelta( $sql );
 
 		// ------------------------------------------------------------------
 		// ayurcrm_logs
 		// ------------------------------------------------------------------
 		$logs_table = $wpdb->prefix . 'ayurcrm_logs';
-		dbDelta( "CREATE TABLE {$logs_table} (
+		$sql        = "CREATE TABLE {$logs_table} (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   level VARCHAR(20) NOT NULL DEFAULT 'info',
   context VARCHAR(100) NOT NULL DEFAULT '',
@@ -199,13 +205,14 @@ class AyurCRM_Migration_0005_Import_Export_Logs extends AyurCRM_Migration_Base {
   KEY idx_context (context),
   KEY idx_lead_id (lead_id),
   KEY idx_created_at (created_at)
-) ENGINE=InnoDB {$collate}" );
+) ENGINE=InnoDB {$collate}";
+		dbDelta( $sql );
 
 		// ------------------------------------------------------------------
 		// ayurcrm_integration_logs
 		// ------------------------------------------------------------------
 		$integ_logs_table = $wpdb->prefix . 'ayurcrm_integration_logs';
-		dbDelta( "CREATE TABLE {$integ_logs_table} (
+		$sql              = "CREATE TABLE {$integ_logs_table} (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   integration VARCHAR(100) NOT NULL DEFAULT '',
   direction ENUM('inbound','outbound') NOT NULL DEFAULT 'outbound',
@@ -223,7 +230,8 @@ class AyurCRM_Migration_0005_Import_Export_Logs extends AyurCRM_Migration_Base {
   KEY idx_status (status),
   KEY idx_lead_id (lead_id),
   KEY idx_created_at (created_at)
-) ENGINE=InnoDB {$collate}" );
+) ENGINE=InnoDB {$collate}";
+		dbDelta( $sql );
 	}
 
 	/**
