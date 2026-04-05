@@ -82,11 +82,16 @@ class AyurCRM_Migrator {
 			return;
 		}
 
-		// Acquire lock — bail if another process is already migrating.
-		if ( get_transient( self::LOCK_KEY ) ) {
+		// Acquire lock — use a unique token so we can verify we own the lock
+		// after setting it, which reduces (though does not fully eliminate) the
+		// race window inherent in transient-based locking.
+		$lock_token = wp_generate_uuid4();
+		set_transient( self::LOCK_KEY, $lock_token, self::LOCK_TTL );
+
+		// Verify we still hold the lock; bail if another process won the race.
+		if ( get_transient( self::LOCK_KEY ) !== $lock_token ) {
 			return;
 		}
-		set_transient( self::LOCK_KEY, 1, self::LOCK_TTL );
 
 		$pending = $this->get_pending_migrations( $current_version );
 

@@ -80,7 +80,7 @@ class AyurCRM_Plugin {
 		$this->load_dependencies();
 
 		// Register upload constants on init (needs WP upload dir).
-		add_action( 'init', array( 'AyurCRM_Constants', 'define_upload_constants' ), 1 );
+		add_action( 'init', array( AyurCRM_Constants::class, 'define_upload_constants' ), 1 );
 
 		// Load plugin text domain.
 		add_action( 'init', array( $this, 'load_textdomain' ) );

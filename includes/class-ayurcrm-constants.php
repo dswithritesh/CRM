@@ -129,7 +129,11 @@ class AyurCRM_Constants {
 		if ( ! empty( $wp_filesystem ) ) {
 			$wp_filesystem->put_contents( $path, $content, FS_CHMOD_FILE );
 		} else {
-			// Last-resort fallback — no direct WP_Filesystem available.
+			// WP_Filesystem is unavailable — falling back to file_put_contents.
+			// Log a warning so admins are aware, then proceed with the fallback.
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'AyurCRM: WP_Filesystem unavailable; falling back to file_put_contents for ' . $path ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions
+			}
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 			file_put_contents( $path, $content );
 		}

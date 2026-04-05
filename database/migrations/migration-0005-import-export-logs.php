@@ -244,7 +244,10 @@ class AyurCRM_Migration_0005_Import_Export_Logs extends AyurCRM_Migration_Base {
 		global $wpdb;
 
 		// Skip seeding if data already exists.
-		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL
+		// The table name is safe to interpolate — it comes from $wpdb->prefix (a
+		// trusted WordPress value) concatenated with a static string literal.
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
 		if ( $count > 0 ) {
 			return;
 		}

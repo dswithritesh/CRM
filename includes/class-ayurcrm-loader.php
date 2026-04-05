@@ -131,7 +131,7 @@ class AyurCRM_Loader {
 		if ( ! file_exists( $file_path ) ) {
 			$this->load_errors[] = array(
 				'file'    => $file_path,
-				'message' => 'File does not exist.',
+				'message' => sprintf( 'Module file does not exist: %s. The related functionality will be disabled.', $file_path ),
 			);
 			return false;
 		}
